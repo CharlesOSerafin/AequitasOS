@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field # type: ignore
 
 class UserCreate(BaseModel):
     email: EmailStr

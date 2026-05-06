@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from jose import jwt
+from jose import jwt # type: ignore
 
 SECRET_KEY = "CHANGE_THIS_LATER"
 ALGORITHM = "HS256"

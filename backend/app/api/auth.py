@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status # type: ignore
+from sqlalchemy.orm import Session # type: ignore
 
 from app.db.session import SessionLocal
 from app.models.user import User
 from app.schemas.user import UserCreate, UserRead
 from app.security.passwords import hash_password
 
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm # type: ignore
 from app.security.passwords import verify_password
 from app.security.jwt import create_access_token
 
