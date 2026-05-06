@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from sqlalchemy import text
+from fastapi import FastAPI # type: ignore
+from sqlalchemy import text # type: ignore
 from app.db.session import engine
 from app.api.auth import router as auth_router
 

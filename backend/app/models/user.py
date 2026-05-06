@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
-from sqlalchemy.sql import func
+from sqlalchemy import Column, Integer, String, DateTime, Boolean # type: ignore
+from sqlalchemy.sql import func # type: ignore
 from app.db.session import Base
 
 class User(Base):
