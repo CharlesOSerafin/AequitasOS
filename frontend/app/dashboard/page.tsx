@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createWorkout, getCurrentUser, getWorkouts } from "@/lib/api";
+import {
+  createWorkout,
+  getCurrentUser,
+  getWorkouts,
+} from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 type User = {
@@ -29,6 +33,36 @@ export default function DashboardPage() {
   const [distanceMeters, setDistanceMeters] = useState("");
   const [intensityRpe, setIntensityRpe] = useState("");
   const [notes, setNotes] = useState("");
+
+  const totalWorkouts = workouts.length;
+
+  const totalDistance = workouts.reduce(
+    (sum, workout) => sum + (workout.distance_meters || 0),
+    0
+  );
+
+  const totalMinutes = workouts.reduce(
+    (sum, workout) => sum + workout.duration_minutes,
+    0
+  );
+
+  const rpeWorkouts = workouts.filter(
+    (workout) => workout.intensity_rpe
+  );
+
+  const averageRpe =
+    rpeWorkouts.length > 0
+      ? rpeWorkouts.reduce(
+          (sum, workout) => sum + (workout.intensity_rpe || 0),
+          0
+        ) / rpeWorkouts.length
+      : 0;
+
+  const trainingLoad = workouts.reduce(
+    (sum, workout) =>
+      sum + workout.duration_minutes * (workout.intensity_rpe || 1),
+    0
+  );
 
   useEffect(() => {
     async function loadDashboard() {
@@ -67,8 +101,12 @@ export default function DashboardPage() {
     const newWorkout = await createWorkout(token, {
       workout_type: workoutType,
       duration_minutes: Number(durationMinutes),
-      distance_meters: distanceMeters ? Number(distanceMeters) : undefined,
-      intensity_rpe: intensityRpe ? Number(intensityRpe) : undefined,
+      distance_meters: distanceMeters
+        ? Number(distanceMeters)
+        : undefined,
+      intensity_rpe: intensityRpe
+        ? Number(intensityRpe)
+        : undefined,
       notes: notes || undefined,
     });
 
@@ -90,7 +128,10 @@ export default function DashboardPage() {
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Aequitas Dashboard</h1>
+            <h1 className="text-3xl font-bold">
+              Aequitas Dashboard
+            </h1>
+
             {user && (
               <p className="text-gray-600">
                 Welcome, {user.first_name || user.email}
@@ -98,19 +139,76 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <button onClick={logout} className="border px-4 py-2 rounded bg-white">
+          <button
+            onClick={logout}
+            className="border px-4 py-2 rounded bg-white"
+          >
             Logout
           </button>
         </div>
 
-        <section className="bg-white border rounded-xl p-6 space-y-4">
-          <h2 className="text-xl font-semibold">Log Workout</h2>
+        <section className="grid gap-4 md:grid-cols-5">
+          <div className="bg-white border rounded-xl p-5">
+            <p className="text-sm text-gray-500">
+              Total Workouts
+            </p>
+            <p className="text-2xl font-bold">
+              {totalWorkouts}
+            </p>
+          </div>
 
-          <form onSubmit={handleCreateWorkout} className="grid gap-4 md:grid-cols-2">
+          <div className="bg-white border rounded-xl p-5">
+            <p className="text-sm text-gray-500">
+              Total Distance
+            </p>
+            <p className="text-2xl font-bold">
+              {(totalDistance / 1000).toFixed(1)} km
+            </p>
+          </div>
+
+          <div className="bg-white border rounded-xl p-5">
+            <p className="text-sm text-gray-500">
+              Training Time
+            </p>
+            <p className="text-2xl font-bold">
+              {totalMinutes} min
+            </p>
+          </div>
+
+          <div className="bg-white border rounded-xl p-5">
+            <p className="text-sm text-gray-500">
+              Average RPE
+            </p>
+            <p className="text-2xl font-bold">
+              {averageRpe.toFixed(1)}
+            </p>
+          </div>
+
+          <div className="bg-white border rounded-xl p-5">
+            <p className="text-sm text-gray-500">
+              Training Load
+            </p>
+            <p className="text-2xl font-bold">
+              {trainingLoad.toFixed(0)}
+            </p>
+          </div>
+        </section>
+
+        <section className="bg-white border rounded-xl p-6 space-y-4">
+          <h2 className="text-xl font-semibold">
+            Log Workout
+          </h2>
+
+          <form
+            onSubmit={handleCreateWorkout}
+            className="grid gap-4 md:grid-cols-2"
+          >
             <select
               className="border p-3 rounded"
               value={workoutType}
-              onChange={(e) => setWorkoutType(e.target.value)}
+              onChange={(e) =>
+                setWorkoutType(e.target.value)
+              }
             >
               <option value="rowing">Rowing</option>
               <option value="running">Running</option>
@@ -123,28 +221,36 @@ export default function DashboardPage() {
               className="border p-3 rounded"
               placeholder="Duration minutes"
               value={durationMinutes}
-              onChange={(e) => setDurationMinutes(e.target.value)}
+              onChange={(e) =>
+                setDurationMinutes(e.target.value)
+              }
             />
 
             <input
               className="border p-3 rounded"
               placeholder="Distance meters"
               value={distanceMeters}
-              onChange={(e) => setDistanceMeters(e.target.value)}
+              onChange={(e) =>
+                setDistanceMeters(e.target.value)
+              }
             />
 
             <input
               className="border p-3 rounded"
               placeholder="Intensity RPE 1-10"
               value={intensityRpe}
-              onChange={(e) => setIntensityRpe(e.target.value)}
+              onChange={(e) =>
+                setIntensityRpe(e.target.value)
+              }
             />
 
             <textarea
               className="border p-3 rounded md:col-span-2"
               placeholder="Notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) =>
+                setNotes(e.target.value)
+              }
             />
 
             <button className="bg-black text-white p-3 rounded md:col-span-2">
@@ -154,18 +260,26 @@ export default function DashboardPage() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">Workout History</h2>
+          <h2 className="text-xl font-semibold">
+            Workout History
+          </h2>
 
           {workouts.length === 0 ? (
-            <p className="text-gray-600">No workouts logged yet.</p>
+            <p className="text-gray-600">
+              No workouts logged yet.
+            </p>
           ) : (
             <div className="grid gap-4">
               {workouts.map((workout) => (
-                <div key={workout.id} className="bg-white border rounded-xl p-5">
+                <div
+                  key={workout.id}
+                  className="bg-white border rounded-xl p-5"
+                >
                   <div className="flex justify-between">
                     <h3 className="font-semibold capitalize">
                       {workout.workout_type}
                     </h3>
+
                     <span className="text-sm text-gray-500">
                       {workout.duration_minutes} min
                     </span>
@@ -184,7 +298,9 @@ export default function DashboardPage() {
                   )}
 
                   {workout.notes && (
-                    <p className="text-gray-600 mt-2">{workout.notes}</p>
+                    <p className="text-gray-600 mt-2">
+                      {workout.notes}
+                    </p>
                   )}
                 </div>
               ))}
