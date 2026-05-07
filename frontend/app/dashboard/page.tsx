@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import {
   createWorkout,
   getCurrentUser,
@@ -16,6 +17,10 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from "recharts";
 
 type User = {
@@ -30,6 +35,7 @@ type Workout = {
   distance_meters?: number;
   intensity_rpe?: number;
   notes?: string;
+  created_at: string;
 };
 
 export default function DashboardPage() {
@@ -74,16 +80,35 @@ export default function DashboardPage() {
     0
   );
 
-  const workoutChartData = workouts.map((workout, index) => ({
-    name: `${index + 1}`,
-    load:
-      workout.duration_minutes *
-      (workout.intensity_rpe || 1),
-  }));
+  const workoutChartData = workouts.map(
+    (workout, index) => ({
+      name: `${index + 1}`,
+      load:
+        workout.duration_minutes *
+        (workout.intensity_rpe || 1),
+    })
+  );
+
+  const workoutTypeData = Object.values(
+    workouts.reduce((acc, workout) => {
+      if (!acc[workout.workout_type]) {
+        acc[workout.workout_type] = {
+          name: workout.workout_type,
+          value: 0,
+        };
+      }
+
+      acc[workout.workout_type].value += 1;
+
+      return acc;
+    }, {} as Record<string, { name: string; value: number }>)
+  );
 
   useEffect(() => {
     async function loadDashboard() {
-      const token = localStorage.getItem("aequitas_token");
+      const token = localStorage.getItem(
+        "aequitas_token"
+      );
 
       if (!token) {
         router.push("/login");
@@ -92,7 +117,10 @@ export default function DashboardPage() {
 
       try {
         const userData = await getCurrentUser(token);
-        const workoutData = await getWorkouts(token);
+
+        const workoutData = await getWorkouts(
+          token
+        );
 
         setUser(userData);
         setWorkouts(workoutData);
@@ -110,24 +138,34 @@ export default function DashboardPage() {
   ) {
     e.preventDefault();
 
-    const token = localStorage.getItem("aequitas_token");
+    const token = localStorage.getItem(
+      "aequitas_token"
+    );
 
     if (!token) {
       router.push("/login");
       return;
     }
 
-    const newWorkout = await createWorkout(token, {
-      workout_type: workoutType,
-      duration_minutes: Number(durationMinutes),
-      distance_meters: distanceMeters
-        ? Number(distanceMeters)
-        : undefined,
-      intensity_rpe: intensityRpe
-        ? Number(intensityRpe)
-        : undefined,
-      notes: notes || undefined,
-    });
+    const newWorkout = await createWorkout(
+      token,
+      {
+        workout_type: workoutType,
+        duration_minutes: Number(
+          durationMinutes
+        ),
+
+        distance_meters: distanceMeters
+          ? Number(distanceMeters)
+          : undefined,
+
+        intensity_rpe: intensityRpe
+          ? Number(intensityRpe)
+          : undefined,
+
+        notes: notes || undefined,
+      }
+    );
 
     setWorkouts([newWorkout, ...workouts]);
 
@@ -153,7 +191,8 @@ export default function DashboardPage() {
 
             {user && (
               <p className="text-gray-600">
-                Welcome, {user.first_name || user.email}
+                Welcome,{" "}
+                {user.first_name || user.email}
               </p>
             )}
           </div>
@@ -234,11 +273,25 @@ export default function DashboardPage() {
                 setWorkoutType(e.target.value)
               }
             >
-              <option value="rowing">Rowing</option>
-              <option value="running">Running</option>
-              <option value="biking">Biking</option>
-              <option value="lifting">Lifting</option>
-              <option value="recovery">Recovery</option>
+              <option value="rowing">
+                Rowing
+              </option>
+
+              <option value="running">
+                Running
+              </option>
+
+              <option value="biking">
+                Biking
+              </option>
+
+              <option value="lifting">
+                Lifting
+              </option>
+
+              <option value="recovery">
+                Recovery
+              </option>
             </select>
 
             <input
@@ -246,7 +299,9 @@ export default function DashboardPage() {
               placeholder="Duration minutes"
               value={durationMinutes}
               onChange={(e) =>
-                setDurationMinutes(e.target.value)
+                setDurationMinutes(
+                  e.target.value
+                )
               }
             />
 
@@ -255,7 +310,9 @@ export default function DashboardPage() {
               placeholder="Distance meters"
               value={distanceMeters}
               onChange={(e) =>
-                setDistanceMeters(e.target.value)
+                setDistanceMeters(
+                  e.target.value
+                )
               }
             />
 
@@ -264,7 +321,9 @@ export default function DashboardPage() {
               placeholder="Intensity RPE 1-10"
               value={intensityRpe}
               onChange={(e) =>
-                setIntensityRpe(e.target.value)
+                setIntensityRpe(
+                  e.target.value
+                )
               }
             />
 
@@ -295,7 +354,9 @@ export default function DashboardPage() {
             >
               <BarChart data={workoutChartData}>
                 <XAxis dataKey="name" />
+
                 <YAxis />
+
                 <Tooltip />
 
                 <Bar
@@ -303,6 +364,41 @@ export default function DashboardPage() {
                   radius={[6, 6, 0, 0]}
                 />
               </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <section className="bg-white border rounded-xl p-6 space-y-4">
+          <h2 className="text-xl font-semibold">
+            Workout Type Breakdown
+          </h2>
+
+          <div className="h-80">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
+              <PieChart>
+                <Pie
+                  data={workoutTypeData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={100}
+                  label
+                >
+                  {workoutTypeData.map(
+                    (entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                      />
+                    )
+                  )}
+                </Pie>
+
+                <Tooltip />
+
+                <Legend />
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </section>
@@ -325,11 +421,16 @@ export default function DashboardPage() {
                 >
                   <div className="flex justify-between">
                     <h3 className="font-semibold capitalize">
-                      {workout.workout_type}
+                      {
+                        workout.workout_type
+                      }
                     </h3>
 
                     <span className="text-sm text-gray-500">
-                      {workout.duration_minutes} min
+                      {
+                        workout.duration_minutes
+                      }{" "}
+                      min
                     </span>
                   </div>
 
@@ -341,7 +442,11 @@ export default function DashboardPage() {
 
                   {workout.intensity_rpe && (
                     <p className="text-gray-700">
-                      RPE: {workout.intensity_rpe}/10
+                      RPE:{" "}
+                      {
+                        workout.intensity_rpe
+                      }
+                      /10
                     </p>
                   )}
 
