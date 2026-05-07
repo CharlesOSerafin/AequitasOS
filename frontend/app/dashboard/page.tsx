@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 
 import {
+  createGoal,
   createWorkout,
+  deleteGoal,
   deleteWorkout,
   getCurrentUser,
+  getGoals,
   getWorkouts,
   updateWorkout,
 } from "@/lib/api";
@@ -43,17 +46,34 @@ type Workout = {
   created_at: string;
 };
 
+type Goal = {
+  id: number;
+  goal_type: string;
+  title: string;
+  target_value: number;
+  current_value: number;
+  unit: string;
+  created_at: string;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
 
   const [user, setUser] = useState<User | null>(null);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
 
   const [workoutType, setWorkoutType] = useState("rowing");
   const [durationMinutes, setDurationMinutes] = useState("");
   const [distanceMeters, setDistanceMeters] = useState("");
   const [intensityRpe, setIntensityRpe] = useState("");
   const [notes, setNotes] = useState("");
+
+  const [goalType, setGoalType] = useState("distance");
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalTargetValue, setGoalTargetValue] = useState("");
+  const [goalCurrentValue, setGoalCurrentValue] = useState("");
+  const [goalUnit, setGoalUnit] = useState("meters");
 
   const [editingWorkoutId, setEditingWorkoutId] = useState<number | null>(null);
   const [editWorkoutType, setEditWorkoutType] = useState("");
@@ -155,9 +175,16 @@ export default function DashboardPage() {
       try {
         const userData = await getCurrentUser(token);
         const workoutData = await getWorkouts(token);
-
+        
         setUser(userData);
         setWorkouts(workoutData);
+        
+        try {
+          const goalData = await getGoals(token);
+          setGoals(goalData);
+        } catch {
+          setGoals([]);
+        }
       } catch {
         localStorage.removeItem("aequitas_token");
         router.push("/login");
@@ -191,6 +218,45 @@ export default function DashboardPage() {
     setDistanceMeters("");
     setIntensityRpe("");
     setNotes("");
+  }
+
+  async function handleCreateGoal(e: React.FormEvent) {
+    e.preventDefault();
+
+    const token = localStorage.getItem("aequitas_token");
+
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    const newGoal = await createGoal(token, {
+      goal_type: goalType,
+      title: goalTitle,
+      target_value: Number(goalTargetValue),
+      current_value: goalCurrentValue ? Number(goalCurrentValue) : 0,
+      unit: goalUnit,
+    });
+
+    setGoals([newGoal, ...goals]);
+
+    setGoalTitle("");
+    setGoalTargetValue("");
+    setGoalCurrentValue("");
+    setGoalUnit("meters");
+  }
+
+  async function handleDeleteGoal(goalId: number) {
+    const token = localStorage.getItem("aequitas_token");
+
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    await deleteGoal(token, goalId);
+
+    setGoals(goals.filter((goal) => goal.id !== goalId));
   }
 
   async function handleDeleteWorkout(workoutId: number) {
@@ -326,6 +392,117 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500">Recovery Status</p>
             <p className="text-2xl font-bold">{recoveryStatus}</p>
           </div>
+        </section>
+
+        <section className="bg-white border rounded-xl p-6 space-y-4">
+          <h2 className="text-xl font-semibold">Create Goal</h2>
+
+          <form
+            onSubmit={handleCreateGoal}
+            className="grid gap-4 md:grid-cols-2"
+          >
+            <select
+              className="border p-3 rounded"
+              value={goalType}
+              onChange={(e) => setGoalType(e.target.value)}
+            >
+              <option value="distance">Distance</option>
+              <option value="time">Time</option>
+              <option value="load">Training Load</option>
+              <option value="strength">Strength</option>
+            </select>
+
+            <input
+              className="border p-3 rounded"
+              placeholder="Goal title"
+              value={goalTitle}
+              onChange={(e) => setGoalTitle(e.target.value)}
+            />
+
+            <input
+              className="border p-3 rounded"
+              placeholder="Target value"
+              value={goalTargetValue}
+              onChange={(e) => setGoalTargetValue(e.target.value)}
+            />
+
+            <input
+              className="border p-3 rounded"
+              placeholder="Current value"
+              value={goalCurrentValue}
+              onChange={(e) => setGoalCurrentValue(e.target.value)}
+            />
+
+            <input
+              className="border p-3 rounded md:col-span-2"
+              placeholder="Unit, e.g. meters, minutes, kg"
+              value={goalUnit}
+              onChange={(e) => setGoalUnit(e.target.value)}
+            />
+
+            <button className="bg-black text-white p-3 rounded md:col-span-2">
+              Save Goal
+            </button>
+          </form>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-2">
+          {goals.length === 0 ? (
+            <div className="bg-white border rounded-xl p-6">
+              <p className="text-gray-600">No goals created yet.</p>
+            </div>
+          ) : (
+            goals.map((goal) => {
+              const progress =
+                goal.target_value > 0
+                  ? Math.min(
+                      (goal.current_value / goal.target_value) * 100,
+                      100
+                    )
+                  : 0;
+
+              return (
+                <div
+                  key={goal.id}
+                  className="bg-white border rounded-xl p-6 space-y-3"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-gray-500 capitalize">
+                        {goal.goal_type}
+                      </p>
+
+                      <h3 className="text-lg font-semibold">
+                        {goal.title}
+                      </h3>
+                    </div>
+
+                    <button
+                      onClick={() => handleDeleteGoal(goal.id)}
+                      className="text-red-600 border border-red-300 rounded px-3 py-1"
+                    >
+                      Delete
+                    </button>
+                  </div>
+
+                  <p className="text-gray-700">
+                    {goal.current_value} / {goal.target_value} {goal.unit}
+                  </p>
+
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className="bg-black h-3 rounded-full"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+
+                  <p className="text-sm text-gray-500">
+                    {progress.toFixed(1)}% complete
+                  </p>
+                </div>
+              );
+            })
+          )}
         </section>
 
         <section className="bg-white border rounded-xl p-6 space-y-4">

@@ -10,6 +10,8 @@ from fastapi import FastAPI, Depends # type: ignore
 from fastapi.middleware.cors import CORSMiddleware # type: ignore
 from sqlalchemy import text # type: ignore
 
+from app.api.goals import router as goals_router
+
 app = FastAPI(title="Aequitas API")
 
 app.add_middleware(
@@ -22,6 +24,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(workouts_router)
+app.include_router(goals_router)
 
 @app.get("/")
 def root():
