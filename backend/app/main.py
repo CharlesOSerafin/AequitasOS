@@ -6,6 +6,10 @@ from app.api.workouts import router as workouts_router
 from app.models.user import User
 from app.security.dependencies import get_current_user
 
+from fastapi import FastAPI, Depends # type: ignore
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
+from sqlalchemy import text # type: ignore
+
 app = FastAPI(title="Aequitas API")
 
 app.add_middleware(
