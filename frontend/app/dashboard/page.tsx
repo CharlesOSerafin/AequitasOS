@@ -6,7 +6,17 @@ import {
   getCurrentUser,
   getWorkouts,
 } from "@/lib/api";
+
 import { useRouter } from "next/navigation";
+
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 
 type User = {
   email: string;
@@ -64,6 +74,13 @@ export default function DashboardPage() {
     0
   );
 
+  const workoutChartData = workouts.map((workout, index) => ({
+    name: `${index + 1}`,
+    load:
+      workout.duration_minutes *
+      (workout.intensity_rpe || 1),
+  }));
+
   useEffect(() => {
     async function loadDashboard() {
       const token = localStorage.getItem("aequitas_token");
@@ -88,7 +105,9 @@ export default function DashboardPage() {
     loadDashboard();
   }, [router]);
 
-  async function handleCreateWorkout(e: React.FormEvent) {
+  async function handleCreateWorkout(
+    e: React.FormEvent
+  ) {
     e.preventDefault();
 
     const token = localStorage.getItem("aequitas_token");
@@ -125,7 +144,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen p-8 bg-gray-50">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">
@@ -152,6 +171,7 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500">
               Total Workouts
             </p>
+
             <p className="text-2xl font-bold">
               {totalWorkouts}
             </p>
@@ -161,6 +181,7 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500">
               Total Distance
             </p>
+
             <p className="text-2xl font-bold">
               {(totalDistance / 1000).toFixed(1)} km
             </p>
@@ -170,6 +191,7 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500">
               Training Time
             </p>
+
             <p className="text-2xl font-bold">
               {totalMinutes} min
             </p>
@@ -179,6 +201,7 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500">
               Average RPE
             </p>
+
             <p className="text-2xl font-bold">
               {averageRpe.toFixed(1)}
             </p>
@@ -188,6 +211,7 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500">
               Training Load
             </p>
+
             <p className="text-2xl font-bold">
               {trainingLoad.toFixed(0)}
             </p>
@@ -257,6 +281,30 @@ export default function DashboardPage() {
               Save Workout
             </button>
           </form>
+        </section>
+
+        <section className="bg-white border rounded-xl p-6 space-y-4">
+          <h2 className="text-xl font-semibold">
+            Training Load Trend
+          </h2>
+
+          <div className="h-80">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
+              <BarChart data={workoutChartData}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+
+                <Bar
+                  dataKey="load"
+                  radius={[6, 6, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </section>
 
         <section className="space-y-4">
