@@ -5,6 +5,8 @@ from sqlalchemy import pool # type: ignore
 
 from alembic import context
 
+from app.models.workout import Workout
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
