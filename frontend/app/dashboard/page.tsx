@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import {
   createWorkout,
+  deleteWorkout,
   getCurrentUser,
   getWorkouts,
 } from "@/lib/api";
@@ -117,7 +118,6 @@ export default function DashboardPage() {
       }
 
       acc[workout.workout_type].value += 1;
-
       return acc;
     }, {} as Record<string, { name: string; value: number }>)
   );
@@ -125,7 +125,6 @@ export default function DashboardPage() {
   const weeklyVolumeData = Object.values(
     workouts.reduce((acc, workout) => {
       const date = new Date(workout.created_at);
-
       const weekLabel = `${date.getMonth() + 1}/${date.getDate()}`;
 
       if (!acc[weekLabel]) {
@@ -136,7 +135,6 @@ export default function DashboardPage() {
       }
 
       acc[weekLabel].distanceKm += (workout.distance_meters || 0) / 1000;
-
       return acc;
     }, {} as Record<string, { week: string; distanceKm: number }>)
   );
@@ -189,6 +187,19 @@ export default function DashboardPage() {
     setDistanceMeters("");
     setIntensityRpe("");
     setNotes("");
+  }
+
+  async function handleDeleteWorkout(workoutId: number) {
+    const token = localStorage.getItem("aequitas_token");
+
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    await deleteWorkout(token, workoutId);
+
+    setWorkouts(workouts.filter((workout) => workout.id !== workoutId));
   }
 
   function logout() {
@@ -386,16 +397,22 @@ export default function DashboardPage() {
                   className="bg-white border rounded-xl p-5"
                 >
                   <div className="flex justify-between">
-                    <h3 className="font-semibold capitalize">
-                      {workout.workout_type}
-                    </h3>
+                    <div>
+                      <h3 className="font-semibold capitalize">
+                        {workout.workout_type}
+                      </h3>
+
+                      <p className="text-sm text-gray-500">
+                        {new Date(workout.created_at).toLocaleString()}
+                      </p>
+                    </div>
 
                     <span className="text-sm text-gray-500">
                       {workout.duration_minutes} min
                     </span>
                   </div>
 
-                  <p className="text-gray-700">
+                  <p className="text-gray-700 mt-2">
                     {workout.distance_meters
                       ? `${workout.distance_meters} meters`
                       : "No distance"}
@@ -411,9 +428,12 @@ export default function DashboardPage() {
                     <p className="text-gray-600 mt-2">{workout.notes}</p>
                   )}
 
-                  <p className="text-xs text-gray-400 mt-2">
-                    {new Date(workout.created_at).toLocaleString()}
-                  </p>
+                  <button
+                    onClick={() => handleDeleteWorkout(workout.id)}
+                    className="mt-4 border border-red-300 text-red-600 px-4 py-2 rounded bg-white"
+                  >
+                    Delete
+                  </button>
                 </div>
               ))}
             </div>

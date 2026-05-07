@@ -1,7 +1,7 @@
 from typing import List
 
-from fastapi import APIRouter, Depends # type: ignore
-from sqlalchemy.orm import Session # type: ignore
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.models.user import User
@@ -46,4 +46,55 @@ def get_workouts(
 ):
     return db.query(Workout).filter(
         Workout.user_id == current_user.id
-    ).all()
+    ).order_by(Workout.created_at.desc()).all()
+
+@router.put("/{workout_id}", response_model=WorkoutRead)
+def update_workout(
+    workout_id: int,
+    workout_data: WorkoutCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    workout = db.query(Workout).filter(
+        Workout.id == workout_id,
+        Workout.user_id == current_user.id
+    ).first()
+
+    if workout is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workout not found"
+        )
+
+    workout.workout_type = workout_data.workout_type
+    workout.duration_minutes = workout_data.duration_minutes
+    workout.distance_meters = workout_data.distance_meters
+    workout.intensity_rpe = workout_data.intensity_rpe
+    workout.notes = workout_data.notes
+
+    db.commit()
+    db.refresh(workout)
+
+    return workout
+
+@router.delete("/{workout_id}")
+def delete_workout(
+    workout_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    workout = db.query(Workout).filter(
+        Workout.id == workout_id,
+        Workout.user_id == current_user.id
+    ).first()
+
+    if workout is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workout not found"
+        )
+
+    db.delete(workout)
+    db.commit()
+
+    return {"message": "Workout deleted"}
