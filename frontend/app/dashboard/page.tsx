@@ -7,6 +7,7 @@ import {
   deleteWorkout,
   getCurrentUser,
   getWorkouts,
+  updateWorkout,
 } from "@/lib/api";
 
 import { useRouter } from "next/navigation";
@@ -54,6 +55,13 @@ export default function DashboardPage() {
   const [intensityRpe, setIntensityRpe] = useState("");
   const [notes, setNotes] = useState("");
 
+  const [editingWorkoutId, setEditingWorkoutId] = useState<number | null>(null);
+  const [editWorkoutType, setEditWorkoutType] = useState("");
+  const [editDurationMinutes, setEditDurationMinutes] = useState("");
+  const [editDistanceMeters, setEditDistanceMeters] = useState("");
+  const [editIntensityRpe, setEditIntensityRpe] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+
   const workoutLoads = workouts.map((workout) => ({
     ...workout,
     load: workout.duration_minutes * (workout.intensity_rpe || 1),
@@ -97,11 +105,7 @@ export default function DashboardPage() {
     averageWorkoutLoad > 0 ? recentLoad / averageWorkoutLoad : 0;
 
   const recoveryStatus =
-    fatigueScore < 5
-      ? "Fresh"
-      : fatigueScore < 9
-      ? "Balanced"
-      : "Fatigued";
+    fatigueScore < 5 ? "Fresh" : fatigueScore < 9 ? "Balanced" : "Fatigued";
 
   const workoutChartData = workoutLoads.map((workout, index) => ({
     name: `${index + 1}`,
@@ -200,6 +204,55 @@ export default function DashboardPage() {
     await deleteWorkout(token, workoutId);
 
     setWorkouts(workouts.filter((workout) => workout.id !== workoutId));
+  }
+
+  function startEditing(workout: Workout) {
+    setEditingWorkoutId(workout.id);
+    setEditWorkoutType(workout.workout_type);
+    setEditDurationMinutes(String(workout.duration_minutes));
+    setEditDistanceMeters(
+      workout.distance_meters ? String(workout.distance_meters) : ""
+    );
+    setEditIntensityRpe(
+      workout.intensity_rpe ? String(workout.intensity_rpe) : ""
+    );
+    setEditNotes(workout.notes || "");
+  }
+
+  function cancelEditing() {
+    setEditingWorkoutId(null);
+    setEditWorkoutType("");
+    setEditDurationMinutes("");
+    setEditDistanceMeters("");
+    setEditIntensityRpe("");
+    setEditNotes("");
+  }
+
+  async function handleUpdateWorkout(workoutId: number) {
+    const token = localStorage.getItem("aequitas_token");
+
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    const updatedWorkout = await updateWorkout(token, workoutId, {
+      workout_type: editWorkoutType,
+      duration_minutes: Number(editDurationMinutes),
+      distance_meters: editDistanceMeters
+        ? Number(editDistanceMeters)
+        : undefined,
+      intensity_rpe: editIntensityRpe ? Number(editIntensityRpe) : undefined,
+      notes: editNotes || undefined,
+    });
+
+    setWorkouts(
+      workouts.map((workout) =>
+        workout.id === workoutId ? updatedWorkout : workout
+      )
+    );
+
+    cancelEditing();
   }
 
   function logout() {
@@ -396,44 +449,117 @@ export default function DashboardPage() {
                   key={workout.id}
                   className="bg-white border rounded-xl p-5"
                 >
-                  <div className="flex justify-between">
-                    <div>
-                      <h3 className="font-semibold capitalize">
-                        {workout.workout_type}
-                      </h3>
+                  {editingWorkoutId === workout.id ? (
+                    <div className="grid gap-3">
+                      <select
+                        className="border p-3 rounded"
+                        value={editWorkoutType}
+                        onChange={(e) => setEditWorkoutType(e.target.value)}
+                      >
+                        <option value="rowing">Rowing</option>
+                        <option value="running">Running</option>
+                        <option value="biking">Biking</option>
+                        <option value="lifting">Lifting</option>
+                        <option value="recovery">Recovery</option>
+                      </select>
 
-                      <p className="text-sm text-gray-500">
-                        {new Date(workout.created_at).toLocaleString()}
-                      </p>
+                      <input
+                        className="border p-3 rounded"
+                        value={editDurationMinutes}
+                        onChange={(e) =>
+                          setEditDurationMinutes(e.target.value)
+                        }
+                        placeholder="Duration minutes"
+                      />
+
+                      <input
+                        className="border p-3 rounded"
+                        value={editDistanceMeters}
+                        onChange={(e) => setEditDistanceMeters(e.target.value)}
+                        placeholder="Distance meters"
+                      />
+
+                      <input
+                        className="border p-3 rounded"
+                        value={editIntensityRpe}
+                        onChange={(e) => setEditIntensityRpe(e.target.value)}
+                        placeholder="Intensity RPE"
+                      />
+
+                      <textarea
+                        className="border p-3 rounded"
+                        value={editNotes}
+                        onChange={(e) => setEditNotes(e.target.value)}
+                        placeholder="Notes"
+                      />
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleUpdateWorkout(workout.id)}
+                          className="bg-black text-white px-4 py-2 rounded"
+                        >
+                          Save
+                        </button>
+
+                        <button
+                          onClick={cancelEditing}
+                          className="border px-4 py-2 rounded bg-white"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between">
+                        <div>
+                          <h3 className="font-semibold capitalize">
+                            {workout.workout_type}
+                          </h3>
 
-                    <span className="text-sm text-gray-500">
-                      {workout.duration_minutes} min
-                    </span>
-                  </div>
+                          <p className="text-sm text-gray-500">
+                            {new Date(workout.created_at).toLocaleString()}
+                          </p>
+                        </div>
 
-                  <p className="text-gray-700 mt-2">
-                    {workout.distance_meters
-                      ? `${workout.distance_meters} meters`
-                      : "No distance"}
-                  </p>
+                        <span className="text-sm text-gray-500">
+                          {workout.duration_minutes} min
+                        </span>
+                      </div>
 
-                  {workout.intensity_rpe && (
-                    <p className="text-gray-700">
-                      RPE: {workout.intensity_rpe}/10
-                    </p>
+                      <p className="text-gray-700 mt-2">
+                        {workout.distance_meters
+                          ? `${workout.distance_meters} meters`
+                          : "No distance"}
+                      </p>
+
+                      {workout.intensity_rpe && (
+                        <p className="text-gray-700">
+                          RPE: {workout.intensity_rpe}/10
+                        </p>
+                      )}
+
+                      {workout.notes && (
+                        <p className="text-gray-600 mt-2">{workout.notes}</p>
+                      )}
+
+                      <div className="flex gap-3 mt-4">
+                        <button
+                          onClick={() => startEditing(workout)}
+                          className="border px-4 py-2 rounded bg-white"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteWorkout(workout.id)}
+                          className="border border-red-300 text-red-600 px-4 py-2 rounded bg-white"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </>
                   )}
-
-                  {workout.notes && (
-                    <p className="text-gray-600 mt-2">{workout.notes}</p>
-                  )}
-
-                  <button
-                    onClick={() => handleDeleteWorkout(workout.id)}
-                    className="mt-4 border border-red-300 text-red-600 px-4 py-2 rounded bg-white"
-                  >
-                    Delete
-                  </button>
                 </div>
               ))}
             </div>

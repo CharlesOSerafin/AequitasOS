@@ -1,7 +1,7 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status # type: ignore
+from sqlalchemy.orm import Session # type: ignore
 
 from app.db.session import SessionLocal
 from app.models.user import User
