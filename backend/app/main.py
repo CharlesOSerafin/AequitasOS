@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from sqlalchemy import text
+from fastapi import FastAPI # type: ignore
+from sqlalchemy import text # type: ignore
 from app.db.session import engine
 from app.api.auth import router as auth_router
 from app.api.workouts import router as workouts_router
@@ -9,7 +9,7 @@ from app.security.dependencies import get_current_user
 app = FastAPI(title="Aequitas API")
 
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware, # type: ignore
     allow_origins=["http://localhost:3001", "http://127.0.0.1:3001"],
     allow_credentials=True,
     allow_methods=["*"],
@@ -30,7 +30,7 @@ def db_test():
         return {"database": "connected", "result": result.scalar()}
 
 @app.get("/me")
-def read_current_user(current_user: User = Depends(get_current_user)):
+def read_current_user(current_user: User = Depends(get_current_user)): # type: ignore
     return {
         "email": current_user.email,
         "first_name": current_user.first_name,
