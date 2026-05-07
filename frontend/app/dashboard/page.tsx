@@ -21,6 +21,9 @@ import {
   Pie,
   Cell,
   Legend,
+  LineChart,
+  Line,
+  CartesianGrid,
 } from "recharts";
 
 type User = {
@@ -50,6 +53,11 @@ export default function DashboardPage() {
   const [intensityRpe, setIntensityRpe] = useState("");
   const [notes, setNotes] = useState("");
 
+  const workoutLoads = workouts.map((workout) => ({
+    ...workout,
+    load: workout.duration_minutes * (workout.intensity_rpe || 1),
+  }));
+
   const totalWorkouts = workouts.length;
 
   const totalDistance = workouts.reduce(
@@ -62,9 +70,7 @@ export default function DashboardPage() {
     0
   );
 
-  const rpeWorkouts = workouts.filter(
-    (workout) => workout.intensity_rpe
-  );
+  const rpeWorkouts = workouts.filter((workout) => workout.intensity_rpe);
 
   const averageRpe =
     rpeWorkouts.length > 0
@@ -74,20 +80,32 @@ export default function DashboardPage() {
         ) / rpeWorkouts.length
       : 0;
 
-  const trainingLoad = workouts.reduce(
-    (sum, workout) =>
-      sum + workout.duration_minutes * (workout.intensity_rpe || 1),
+  const trainingLoad = workoutLoads.reduce(
+    (sum, workout) => sum + workout.load,
     0
   );
 
-  const workoutChartData = workouts.map(
-    (workout, index) => ({
-      name: `${index + 1}`,
-      load:
-        workout.duration_minutes *
-        (workout.intensity_rpe || 1),
-    })
-  );
+  const recentLoad = workoutLoads
+    .slice(0, 7)
+    .reduce((sum, workout) => sum + workout.load, 0);
+
+  const averageWorkoutLoad =
+    workoutLoads.length > 0 ? trainingLoad / workoutLoads.length : 0;
+
+  const fatigueScore =
+    averageWorkoutLoad > 0 ? recentLoad / averageWorkoutLoad : 0;
+
+  const recoveryStatus =
+    fatigueScore < 5
+      ? "Fresh"
+      : fatigueScore < 9
+      ? "Balanced"
+      : "Fatigued";
+
+  const workoutChartData = workoutLoads.map((workout, index) => ({
+    name: `${index + 1}`,
+    load: workout.load,
+  }));
 
   const workoutTypeData = Object.values(
     workouts.reduce((acc, workout) => {
@@ -104,11 +122,28 @@ export default function DashboardPage() {
     }, {} as Record<string, { name: string; value: number }>)
   );
 
+  const weeklyVolumeData = Object.values(
+    workouts.reduce((acc, workout) => {
+      const date = new Date(workout.created_at);
+
+      const weekLabel = `${date.getMonth() + 1}/${date.getDate()}`;
+
+      if (!acc[weekLabel]) {
+        acc[weekLabel] = {
+          week: weekLabel,
+          distanceKm: 0,
+        };
+      }
+
+      acc[weekLabel].distanceKm += (workout.distance_meters || 0) / 1000;
+
+      return acc;
+    }, {} as Record<string, { week: string; distanceKm: number }>)
+  );
+
   useEffect(() => {
     async function loadDashboard() {
-      const token = localStorage.getItem(
-        "aequitas_token"
-      );
+      const token = localStorage.getItem("aequitas_token");
 
       if (!token) {
         router.push("/login");
@@ -117,10 +152,7 @@ export default function DashboardPage() {
 
       try {
         const userData = await getCurrentUser(token);
-
-        const workoutData = await getWorkouts(
-          token
-        );
+        const workoutData = await getWorkouts(token);
 
         setUser(userData);
         setWorkouts(workoutData);
@@ -133,39 +165,23 @@ export default function DashboardPage() {
     loadDashboard();
   }, [router]);
 
-  async function handleCreateWorkout(
-    e: React.FormEvent
-  ) {
+  async function handleCreateWorkout(e: React.FormEvent) {
     e.preventDefault();
 
-    const token = localStorage.getItem(
-      "aequitas_token"
-    );
+    const token = localStorage.getItem("aequitas_token");
 
     if (!token) {
       router.push("/login");
       return;
     }
 
-    const newWorkout = await createWorkout(
-      token,
-      {
-        workout_type: workoutType,
-        duration_minutes: Number(
-          durationMinutes
-        ),
-
-        distance_meters: distanceMeters
-          ? Number(distanceMeters)
-          : undefined,
-
-        intensity_rpe: intensityRpe
-          ? Number(intensityRpe)
-          : undefined,
-
-        notes: notes || undefined,
-      }
-    );
+    const newWorkout = await createWorkout(token, {
+      workout_type: workoutType,
+      duration_minutes: Number(durationMinutes),
+      distance_meters: distanceMeters ? Number(distanceMeters) : undefined,
+      intensity_rpe: intensityRpe ? Number(intensityRpe) : undefined,
+      notes: notes || undefined,
+    });
 
     setWorkouts([newWorkout, ...workouts]);
 
@@ -185,14 +201,11 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">
-              Aequitas Dashboard
-            </h1>
+            <h1 className="text-3xl font-bold">Aequitas Dashboard</h1>
 
             {user && (
               <p className="text-gray-600">
-                Welcome,{" "}
-                {user.first_name || user.email}
+                Welcome, {user.first_name || user.email}
               </p>
             )}
           </div>
@@ -207,60 +220,52 @@ export default function DashboardPage() {
 
         <section className="grid gap-4 md:grid-cols-5">
           <div className="bg-white border rounded-xl p-5">
-            <p className="text-sm text-gray-500">
-              Total Workouts
-            </p>
-
-            <p className="text-2xl font-bold">
-              {totalWorkouts}
-            </p>
+            <p className="text-sm text-gray-500">Total Workouts</p>
+            <p className="text-2xl font-bold">{totalWorkouts}</p>
           </div>
 
           <div className="bg-white border rounded-xl p-5">
-            <p className="text-sm text-gray-500">
-              Total Distance
-            </p>
-
+            <p className="text-sm text-gray-500">Total Distance</p>
             <p className="text-2xl font-bold">
               {(totalDistance / 1000).toFixed(1)} km
             </p>
           </div>
 
           <div className="bg-white border rounded-xl p-5">
-            <p className="text-sm text-gray-500">
-              Training Time
-            </p>
-
-            <p className="text-2xl font-bold">
-              {totalMinutes} min
-            </p>
+            <p className="text-sm text-gray-500">Training Time</p>
+            <p className="text-2xl font-bold">{totalMinutes} min</p>
           </div>
 
           <div className="bg-white border rounded-xl p-5">
-            <p className="text-sm text-gray-500">
-              Average RPE
-            </p>
-
-            <p className="text-2xl font-bold">
-              {averageRpe.toFixed(1)}
-            </p>
+            <p className="text-sm text-gray-500">Average RPE</p>
+            <p className="text-2xl font-bold">{averageRpe.toFixed(1)}</p>
           </div>
 
           <div className="bg-white border rounded-xl p-5">
-            <p className="text-sm text-gray-500">
-              Training Load
-            </p>
+            <p className="text-sm text-gray-500">Training Load</p>
+            <p className="text-2xl font-bold">{trainingLoad.toFixed(0)}</p>
+          </div>
+        </section>
 
-            <p className="text-2xl font-bold">
-              {trainingLoad.toFixed(0)}
-            </p>
+        <section className="grid gap-4 md:grid-cols-3">
+          <div className="bg-white border rounded-xl p-5">
+            <p className="text-sm text-gray-500">Recent Load</p>
+            <p className="text-2xl font-bold">{recentLoad.toFixed(0)}</p>
+          </div>
+
+          <div className="bg-white border rounded-xl p-5">
+            <p className="text-sm text-gray-500">Fatigue Score</p>
+            <p className="text-2xl font-bold">{fatigueScore.toFixed(1)}</p>
+          </div>
+
+          <div className="bg-white border rounded-xl p-5">
+            <p className="text-sm text-gray-500">Recovery Status</p>
+            <p className="text-2xl font-bold">{recoveryStatus}</p>
           </div>
         </section>
 
         <section className="bg-white border rounded-xl p-6 space-y-4">
-          <h2 className="text-xl font-semibold">
-            Log Workout
-          </h2>
+          <h2 className="text-xl font-semibold">Log Workout</h2>
 
           <form
             onSubmit={handleCreateWorkout}
@@ -269,71 +274,41 @@ export default function DashboardPage() {
             <select
               className="border p-3 rounded"
               value={workoutType}
-              onChange={(e) =>
-                setWorkoutType(e.target.value)
-              }
+              onChange={(e) => setWorkoutType(e.target.value)}
             >
-              <option value="rowing">
-                Rowing
-              </option>
-
-              <option value="running">
-                Running
-              </option>
-
-              <option value="biking">
-                Biking
-              </option>
-
-              <option value="lifting">
-                Lifting
-              </option>
-
-              <option value="recovery">
-                Recovery
-              </option>
+              <option value="rowing">Rowing</option>
+              <option value="running">Running</option>
+              <option value="biking">Biking</option>
+              <option value="lifting">Lifting</option>
+              <option value="recovery">Recovery</option>
             </select>
 
             <input
               className="border p-3 rounded"
               placeholder="Duration minutes"
               value={durationMinutes}
-              onChange={(e) =>
-                setDurationMinutes(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setDurationMinutes(e.target.value)}
             />
 
             <input
               className="border p-3 rounded"
               placeholder="Distance meters"
               value={distanceMeters}
-              onChange={(e) =>
-                setDistanceMeters(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setDistanceMeters(e.target.value)}
             />
 
             <input
               className="border p-3 rounded"
               placeholder="Intensity RPE 1-10"
               value={intensityRpe}
-              onChange={(e) =>
-                setIntensityRpe(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setIntensityRpe(e.target.value)}
             />
 
             <textarea
               className="border p-3 rounded md:col-span-2"
               placeholder="Notes"
               value={notes}
-              onChange={(e) =>
-                setNotes(e.target.value)
-              }
+              onChange={(e) => setNotes(e.target.value)}
             />
 
             <button className="bg-black text-white p-3 rounded md:col-span-2">
@@ -343,41 +318,41 @@ export default function DashboardPage() {
         </section>
 
         <section className="bg-white border rounded-xl p-6 space-y-4">
-          <h2 className="text-xl font-semibold">
-            Training Load Trend
-          </h2>
+          <h2 className="text-xl font-semibold">Training Load Trend</h2>
 
           <div className="h-80">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={workoutChartData}>
                 <XAxis dataKey="name" />
-
                 <YAxis />
-
                 <Tooltip />
-
-                <Bar
-                  dataKey="load"
-                  radius={[6, 6, 0, 0]}
-                />
+                <Bar dataKey="load" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </section>
 
         <section className="bg-white border rounded-xl p-6 space-y-4">
-          <h2 className="text-xl font-semibold">
-            Workout Type Breakdown
-          </h2>
+          <h2 className="text-xl font-semibold">Weekly Volume Trend</h2>
 
           <div className="h-80">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weeklyVolumeData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="week" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="distanceKm" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <section className="bg-white border rounded-xl p-6 space-y-4">
+          <h2 className="text-xl font-semibold">Workout Type Breakdown</h2>
+
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={workoutTypeData}
@@ -386,17 +361,12 @@ export default function DashboardPage() {
                   outerRadius={100}
                   label
                 >
-                  {workoutTypeData.map(
-                    (entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                      />
-                    )
-                  )}
+                  {workoutTypeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} />
+                  ))}
                 </Pie>
 
                 <Tooltip />
-
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -404,14 +374,10 @@ export default function DashboardPage() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">
-            Workout History
-          </h2>
+          <h2 className="text-xl font-semibold">Workout History</h2>
 
           {workouts.length === 0 ? (
-            <p className="text-gray-600">
-              No workouts logged yet.
-            </p>
+            <p className="text-gray-600">No workouts logged yet.</p>
           ) : (
             <div className="grid gap-4">
               {workouts.map((workout) => (
@@ -421,16 +387,11 @@ export default function DashboardPage() {
                 >
                   <div className="flex justify-between">
                     <h3 className="font-semibold capitalize">
-                      {
-                        workout.workout_type
-                      }
+                      {workout.workout_type}
                     </h3>
 
                     <span className="text-sm text-gray-500">
-                      {
-                        workout.duration_minutes
-                      }{" "}
-                      min
+                      {workout.duration_minutes} min
                     </span>
                   </div>
 
@@ -442,19 +403,17 @@ export default function DashboardPage() {
 
                   {workout.intensity_rpe && (
                     <p className="text-gray-700">
-                      RPE:{" "}
-                      {
-                        workout.intensity_rpe
-                      }
-                      /10
+                      RPE: {workout.intensity_rpe}/10
                     </p>
                   )}
 
                   {workout.notes && (
-                    <p className="text-gray-600 mt-2">
-                      {workout.notes}
-                    </p>
+                    <p className="text-gray-600 mt-2">{workout.notes}</p>
                   )}
+
+                  <p className="text-xs text-gray-400 mt-2">
+                    {new Date(workout.created_at).toLocaleString()}
+                  </p>
                 </div>
               ))}
             </div>
