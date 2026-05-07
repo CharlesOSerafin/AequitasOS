@@ -10,52 +10,67 @@ Built as a portfolio-grade software engineering and cybersecurity project, Aequi
 
 AequitasOS was designed to demonstrate:
 
-* Full-stack software engineering
-* Secure authentication and authorization
-* Backend API development
-* PostgreSQL database architecture
-* Modern frontend development with React/Next.js
-* Cybersecurity best practices
-* JWT authentication
-* Dockerized infrastructure
-* Analytics and performance visualization
-* Real-world usability for athletes
-* Production-style project organization
+- Full-stack software engineering
+- Secure authentication and authorization
+- Backend API development
+- PostgreSQL database architecture
+- Modern frontend development with React/Next.js
+- Cybersecurity best practices
+- JWT authentication
+- Dockerized infrastructure
+- Analytics and performance visualization
+- Real-world usability for athletes
+- Production-style project organization
 
 ---
 
 # Current Features
 
+## Authentication & Security
+
+- Secure user registration and login
+- JWT-based authentication
+- Protected API endpoints
+- Argon2 password hashing
+- OAuth2 password flow
+- Environment-based secret configuration
+- CORS protection
+
 ## Backend
 
-* FastAPI REST API
-* PostgreSQL database integration
-* SQLAlchemy ORM models
-* JWT authentication system
-* Password hashing with Argon2
-* Protected API routes
-* Workout tracking endpoints
-* Environment variable configuration
-* CORS configuration
+- FastAPI REST API
+- PostgreSQL database integration
+- SQLAlchemy ORM models
+- Workout CRUD architecture
+- User-specific workout ownership
+- Pydantic validation schemas
+- Timestamped workout tracking
 
 ## Frontend
 
-* Next.js frontend
-* React + TypeScript
-* Tailwind CSS styling
-* Registration flow
-* API integration layer
-* Mobile-friendly UI foundation
+- Next.js App Router architecture
+- React + TypeScript frontend
+- Tailwind CSS UI
+- Login and registration flows
+- Protected dashboard routes
+- Local JWT session persistence
+- Responsive dashboard layout
 
-## Security Features
+## Analytics
 
-* Argon2 password hashing
-* JWT access tokens
-* Protected endpoints
-* Input validation with Pydantic
-* Environment variable secret management
-* CORS restrictions
-* Secure authentication architecture
+- Workout history tracking
+- Total distance calculations
+- Training load calculations
+- Average RPE analytics
+- Training load visualization charts
+- Workout type distribution charts
+
+## Infrastructure
+
+- Docker-ready architecture
+- Environment configuration examples
+- GitHub-integrated workflow
+- Development Makefile
 
 ---
 
@@ -63,34 +78,35 @@ AequitasOS was designed to demonstrate:
 
 ## Frontend
 
-* Next.js
-* React
-* TypeScript
-* Tailwind CSS
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Recharts
 
 ## Backend
 
-* FastAPI
-* Python
-* SQLAlchemy
-* Pydantic
-* Uvicorn
+- FastAPI
+- Python
+- SQLAlchemy
+- Pydantic
+- Uvicorn
 
 ## Database
 
-* PostgreSQL
+- PostgreSQL
 
 ## DevOps / Infrastructure
 
-* Docker
-* Docker Compose
-* GitHub
+- Docker
+- Docker Compose
+- GitHub
 
 ## Security
 
-* JWT Authentication
-* Argon2 Password Hashing
-* OAuth2 Password Flow
+- JWT Authentication
+- Argon2 Password Hashing
+- OAuth2 Password Flow
 
 ---
 
@@ -116,7 +132,8 @@ AequitasOS/
 │   └── package.json
 │
 ├── docker-compose.yml
-├── .gitignore
+├── Makefile
+├── .env.example
 └── README.md
 ```
 
@@ -126,39 +143,54 @@ AequitasOS/
 
 ## Training Features
 
-* Workout creation UI
-* Rowing/running/cycling/lifting support
-* Training load calculations
-* Fatigue and recovery metrics
-* Goal planning system
-* Weekly training summaries
-* Workout history
+- Workout creation UI
+- Rowing/running/cycling/lifting support
+- Training load calculations
+- Fatigue and recovery metrics
+- Goal planning system
+- Weekly training summaries
+- Workout history
+- PR detection
 
 ## Analytics
 
-* Performance dashboards
-* Training trend visualization
-* Progress graphs
-* Recovery analytics
-* Volume tracking
-* Intensity distribution analysis
+- Weekly volume trends
+- Performance dashboards
+- Progress graphs
+- Recovery analytics
+- Volume tracking
+- Intensity distribution analysis
+- Rolling averages
+- Fatigue scoring
+- Performance forecasting
 
 ## Security & Infrastructure
 
-* Refresh token rotation
-* Rate limiting
-* Audit logging
-* Role-based access control
-* HTTPS deployment
-* CI/CD pipeline
-* Cloud deployment
+- Refresh token rotation
+- Rate limiting
+- Audit logging
+- Role-based access control
+- HTTPS deployment
+- CI/CD pipeline
+- Cloud deployment
 
 ## Future Integrations
 
-* Garmin API integration
-* Strava integration
-* Concept2 rowing data sync
-* Wearable device support
+- Garmin API integration
+- Strava integration
+- Concept2 rowing data sync
+- Wearable device support
+
+---
+
+# Local Development Setup
+
+## Clone Repository
+
+```bash
+git clone https://github.com/CharlesOSerafin/AequitasOS.git
+cd AequitasOS
+```
 
 ---
 
@@ -196,7 +228,7 @@ http://127.0.0.1:8000/docs
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev -- --port 3001
 ```
 
 Frontend available at:
@@ -223,11 +255,11 @@ http://localhost:3001
 
 As a college athlete and computer science student focused on software security, I wanted to build a real-world application that combines:
 
-* Cybersecurity
-* Full-stack engineering
-* Data analytics
-* Athlete performance tracking
-* Modern software architecture
+- Cybersecurity
+- Full-stack engineering
+- Data analytics
+- Athlete performance tracking
+- Modern software architecture
 
 AequitasOS is intended to be both:
 
@@ -236,33 +268,76 @@ AequitasOS is intended to be both:
 
 ---
 
+# Engineering Focus
+
+AequitasOS is intentionally designed as a production-style engineering project rather than a tutorial CRUD application.
+
+Key engineering priorities include:
+
+- Secure authentication architecture
+- Scalable backend organization
+- Clean API separation
+- Typed frontend/backend communication
+- Modern React state management
+- Database normalization
+- Analytics computation pipelines
+- Visualization systems
+- Infrastructure portability
+- Real-world usability
+
+The project emphasizes both:
+
+- software engineering quality
+- practical value for endurance athletes
+
+---
+
 # Development Status
 
 ## Current Phase
 
-Core Authentication & Full-Stack Foundation
+Analytics & Performance Platform Development
 
 ### Completed
 
-* Repository setup
-* Backend architecture
-* PostgreSQL integration
-* JWT authentication
-* User registration
-* Protected API routes
-* Frontend registration page
-* Frontend/backend communication
+- Repository architecture
+- FastAPI backend
+- PostgreSQL integration
+- JWT authentication
+- Secure registration/login
+- Protected API routes
+- Frontend authentication flow
+- Workout logging system
+- Workout history dashboard
+- Analytics summary cards
+- Training load calculations
+- Interactive Recharts visualizations
+- Workout type analytics
+- Docker-ready configuration
+- Professional development tooling
 
 ### In Progress
 
-* Frontend login flow
-* Session management
-* Workout UI
-* Dashboard architecture
+- Weekly volume analytics
+- Rolling training metrics
+- Advanced data visualization
+- Recovery/fatigue calculations
+- Dashboard refinement
+- Mobile responsiveness
+
+### Planned
+
+- Garmin/Strava integration
+- Cloud deployment
+- CI/CD pipeline
+- AI coaching insights
+- Team/coach dashboards
+- Athlete goal planning
+- Recovery scoring engine
+- Performance forecasting
 
 ---
 
 # License
 
 This project is currently under active personal development.
-
