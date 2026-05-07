@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel # type: ignore
 
 class WorkoutCreate(BaseModel):
     workout_type: str
